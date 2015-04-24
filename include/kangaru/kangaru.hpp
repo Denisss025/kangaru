@@ -50,15 +50,16 @@ class Container : public std::enable_shared_from_this<Container> {
 	template<typename T> using dependency_types = typename Service<T>::DependenciesTypes;
 	template<typename T> using parent_types = typename Service<T>::ParentTypes;
 	template<typename Tuple> using tuple_seq = typename detail::seq_gen<std::tuple_size<Tuple>::value>::type;
-	template<int S, typename T> using parent_element = typename std::tuple_element<S, parent_types<T>>::type;
 	template<int S, typename Tuple> using tuple_element = typename std::tuple_element<S, Tuple>::type;
+	template<int S, typename T> using parent_element = tuple_element<S, parent_types<T>>;
+	template <int S, typename T> using dep_element = tuple_element<S, dependency_types<T>>;
 	using holder_ptr = std::unique_ptr<detail::Holder>;
 	using callback_cont = std::unordered_map<detail::type_id_fn, holder_ptr>;
 	using instance_cont = std::unordered_map<detail::type_id_fn, std::shared_ptr<void>>;
 	template<typename T> using ptr_type_helper = typename detail::pointer_type_helper<detail::has_pointer_type<T>::value, T>::type;
-	template<int S, typename Services> using ptr_type_helpers = ptr_type_helper<typename std::tuple_element<S, Services>::type>;
+	template<int S, typename Services> using ptr_type_helpers = ptr_type_helper<tuple_element<S, Services>>;
 	template<typename T> using ptr_type = detail::ptr_type<T>;
-	template<int S, typename Services> using ptr_types = ptr_type<typename std::tuple_element<S, Services>::type>;
+	template<int S, typename Services> using ptr_types = ptr_type<tuple_element<S, Services>>;
 	constexpr static detail::enabler null = {};
 	
 public:
@@ -175,12 +176,12 @@ private:
 	
 	template<typename T, int ...S, typename ...Args, enable_if<is_service_single<T>> = null>
 	ptr_type<T> make_service_dependency(detail::seq<S...>, Args&& ...args) {
-		return ptr_type_helper<T>::make_pointer(service<tuple_element<S, dependency_types<T>>>()..., std::forward<Args>(args)...);
+		return ptr_type_helper<T>::make_pointer(service<dep_element<S, T>>()..., std::forward<Args>(args)...);
 	}
 	
 	template<typename T, int ...S, typename ...Args, disable_if<is_service_single<T>> = null>
 	ptr_type<T> make_service_dependency(detail::seq<S...> seq, Args&& ...args) {
-		auto dependencies = std::make_tuple(service<tuple_element<S, dependency_types<T>>>()...);
+		auto dependencies = std::make_tuple(service<dep_element<S, T>>()...);
 		auto service = callback_make_service<T>(seq, dependencies, std::forward<Args>(args)...);
 		
 		return service ? service : ptr_type_helper<T>::make_pointer(std::get<S>(dependencies)..., std::forward<Args>(args)...);
