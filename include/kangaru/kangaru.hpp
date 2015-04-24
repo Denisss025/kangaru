@@ -162,11 +162,6 @@ private:
 		save_instance<T, parent_element<S, T>...>(std::move(service));
 	}
 	
-	template<typename Tuple, int ...S>
-	std::tuple<ptr_types<S, Tuple>...> dependency(detail::seq<S...>) {
-		return std::make_tuple(service<tuple_element<S, Tuple>>()...);
-	}
-	
 	template<typename T, typename Tuple, int ...S, typename ...Args>
 	ptr_type<T> callback_make_service(detail::seq<S...>, Tuple dependencies, Args&& ...args) const {
 		auto it = _callbacks.find(&detail::type_id<T, tuple_element<S, Tuple>..., Args...>);
@@ -178,22 +173,22 @@ private:
 		return {};
 	}
 	
-	template<typename T, typename Tuple, int ...S, typename ...Args, enable_if<is_service_single<T>> = null>
-	ptr_type<T> make_service_dependency(detail::seq<S...>, Tuple dependencies, Args&& ...args) const {
-		return ptr_type_helper<T>::make_pointer(std::move(std::get<S>(dependencies))..., std::forward<Args>(args)...);
+	template<typename T, int ...S, typename ...Args, enable_if<is_service_single<T>> = null>
+	ptr_type<T> make_service_dependency(detail::seq<S...>, Args&& ...args) {
+		return ptr_type_helper<T>::make_pointer(service<tuple_element<S, dependency_types<T>>>()..., std::forward<Args>(args)...);
 	}
 	
-	template<typename T, typename Tuple, int ...S, typename ...Args, disable_if<is_service_single<T>> = null>
-	ptr_type<T> make_service_dependency(detail::seq<S...> seq, Tuple dependencies, Args&& ...args) const {
-		auto service = callback_make_service<T, Tuple>(seq, dependencies, std::forward<Args>(args)...);
+	template<typename T, int ...S, typename ...Args, disable_if<is_service_single<T>> = null>
+	ptr_type<T> make_service_dependency(detail::seq<S...> seq, Args&& ...args) {
+		auto dependencies = std::make_tuple(service<tuple_element<S, dependency_types<T>>>()...);
+		auto service = callback_make_service<T>(seq, dependencies, std::forward<Args>(args)...);
 		
 		return service ? service : ptr_type_helper<T>::make_pointer(std::get<S>(dependencies)..., std::forward<Args>(args)...);
 	}
 
 	template <typename T, typename ...Args>
 	ptr_type<T> make_service(Args&& ...args) {
-		auto seq = tuple_seq<dependency_types<T>>{};
-		return make_service_dependency<T>(seq, dependency<dependency_types<T>>(seq), std::forward<Args>(args)...);
+		return make_service_dependency<T>(tuple_seq<dependency_types<T>>{}, std::forward<Args>(args)...);
 	}
 	
 	template<typename T, typename U, typename ...Others>
