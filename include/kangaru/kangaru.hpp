@@ -196,10 +196,10 @@ private:
 		return make_service_dependency<T>(seq, dependency<dependency_types<T>>(seq), std::forward<Args>(args)...);
 	}
 	
-	template<typename T, typename ...Others>
-	detail::enable_if_t<(sizeof...(Others) > 0), void> save_instance(std::shared_ptr<T> service) {
+	template<typename T, typename U, typename ...Others>
+	void save_instance(std::shared_ptr<T> service) {
 		save_instance<T>(service);
-		save_instance<Others...>(std::move(service));
+		save_instance<U, Others...>(std::move(service));
 	}
 	
 	template<typename T>
