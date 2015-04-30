@@ -1,4 +1,18 @@
 language: cpp
+env:
+        global:
+                # The next declaration is the encrypted COVERITY_SCAN_TOKEN, created
+                #   via the "travis encrypt" command using the project repo's public key
+                - secure: "l7hVBFTAnJMm+xuNqvjYxE0lJWSjLIL2/fMVn/MqoyaM5J9dRX392JfDDFV00F1i7RE7VrH4BKdgrCVu62WAcVBnywQG4vpi0y5sfsMK3x86LObK6MM0oyTKxiDmvZugZ5JbrmbvfyoVC061SDPJUMhkDngUfy/sYGUdwgGunJs="
+addons:
+        coverity_scan:
+                project:
+                        name: "Denisss025/kangaru"
+                        description: "Build submitted via Travis CI"
+                notification_email: denisnovikov@garant.ru
+                build_command_prepend: "rm -rf build/; mkdir build; cd build; cmake ..; cd .."
+                build_command:   "make -Cbuild -j2"
+                branch_pattern: coverity_scan
 branches:
         only:
                 - travis
