@@ -23,7 +23,7 @@ install:
         - sudo apt-get install -qq g++-4.8
         - export CXX="g++-4.8"
 script:
-        - [ -d "build" ] || mkdir build
+        - mkdir -p build
         - pushd build
         - rm -rf *
         - cmake ..
